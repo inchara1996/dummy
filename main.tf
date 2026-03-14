@@ -205,7 +205,7 @@ resource "azurerm_linux_virtual_machine" "vm2" {
   name                = "inch-vm2"
   resource_group_name = azurerm_resource_group.rg.name
   location            = "japaneast"
-  size                = "Standard_D4ads_v5"             # 4 vCPU, 16 GB RAM
+  size                = "Standard_D4s_v3"             # 4 vCPU, 16 GB RAM
 
   admin_username                  = "azureuser"
   admin_password                  = var.admin_password
