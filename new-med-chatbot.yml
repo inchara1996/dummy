@@ -1,0 +1,198 @@
+trigger: none
+
+pool:
+  name: 'shivalik-pool'
+
+variables:
+  - group: vmpasswd                         # contains secret: vm-password
+  - name: terraformVersion
+    value: '1.6.6'
+  - name: azureServiceConnection
+    value: 'shivalik-service'
+  - name: backendResourceGroup
+    value: 'Chidu-RG'
+  - name: backendStorageAccount
+    value: 'eval4adosa'
+  - name: backendContainer
+    value: 'demo123'
+  - name: backendKey
+    value: 'demostate.tfstate'             # updated key → separate state for multi-region infra
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REUSABLE STEP TEMPLATES
+# Defined once here to avoid repeating the same 2-step Init block in every job.
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTE: Azure DevOps does not support YAML anchors in all versions of the agent.
+# If your agent does not support anchors, copy the steps inline per stage.
+# ─────────────────────────────────────────────────────────────────────────────
+
+stages:
+
+# ─────────────────────────────────────────
+# STAGE 1 — Terraform Init
+# Initialises the backend and validates provider config.
+# ─────────────────────────────────────────
+- stage: Terraform_Init
+  displayName: '1 · Terraform Init'
+  jobs:
+  - job: Init
+    displayName: 'Initialise backend'
+    steps:
+
+    - checkout: self                        # ← pulls your repo (main.tf must be here)
+
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform $(terraformVersion)'
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - task: TerraformTaskV4@4
+      displayName: 'terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: $(azureServiceConnection)
+        backendAzureRmResourceGroupName: $(backendResourceGroup)
+        backendAzureRmStorageAccountName: $(backendStorageAccount)
+        backendAzureRmContainerName: $(backendContainer)
+        backendAzureRmKey: $(backendKey)
+        commandOptions: '-reconfigure'
+
+# ─────────────────────────────────────────
+# STAGE 2 — Terraform Validate
+# Catches syntax / config errors before Plan.
+# ─────────────────────────────────────────
+- stage: Terraform_Validate
+  displayName: '2 · Terraform Validate'
+  dependsOn: Terraform_Init
+  jobs:
+  - job: Validate
+    displayName: 'Validate configuration'
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform $(terraformVersion)'
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - task: TerraformTaskV4@4
+      displayName: 'terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: $(azureServiceConnection)
+        backendAzureRmResourceGroupName: $(backendResourceGroup)
+        backendAzureRmStorageAccountName: $(backendStorageAccount)
+        backendAzureRmContainerName: $(backendContainer)
+        backendAzureRmKey: $(backendKey)
+        commandOptions: '-reconfigure'
+
+    - task: TerraformTaskV4@4
+      displayName: 'terraform validate'
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+
+# ─────────────────────────────────────────
+# STAGE 3 — Terraform Plan
+# Generates an execution plan and saves it as an artifact.
+# The -out flag saves the plan so Apply uses the exact same plan.
+# ─────────────────────────────────────────
+- stage: Terraform_Plan
+  displayName: '3 · Terraform Plan'
+  dependsOn: Terraform_Validate
+  jobs:
+  - job: Plan
+    displayName: 'Generate execution plan'
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform $(terraformVersion)'
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - task: TerraformTaskV4@4
+      displayName: 'terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: $(azureServiceConnection)
+        backendAzureRmResourceGroupName: $(backendResourceGroup)
+        backendAzureRmStorageAccountName: $(backendStorageAccount)
+        backendAzureRmContainerName: $(backendContainer)
+        backendAzureRmKey: $(backendKey)
+        commandOptions: '-reconfigure'
+
+    - task: TerraformTaskV4@4
+      displayName: 'terraform plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: $(azureServiceConnection)
+        commandOptions: >-
+          -var="admin_password=$(vm-password)"
+          -out=$(Build.ArtifactStagingDirectory)/tfplan
+
+    # Publish the saved plan so the Apply stage can download and use it
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish plan artifact'
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/tfplan'
+        artifact: 'tfplan'
+
+# ─────────────────────────────────────────
+# STAGE 4 — Terraform Apply
+# Downloads the saved plan and applies it.
+# Uses a deployment job so an Azure DevOps Environment approval gate
+# can be configured on 'inch-tf-apply'.
+# ─────────────────────────────────────────
+- stage: Terraform_Apply
+  displayName: '4 · Terraform Apply'
+  dependsOn: Terraform_Plan
+  jobs:
+  - deployment: Apply
+    displayName: 'Apply infrastructure changes'
+    environment: inch-tf-apply          # ← configure approval gate here in ADO
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - checkout: self              # ← REQUIRED in deployment jobs (no implicit checkout)
+
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform $(terraformVersion)'
+            inputs:
+              terraformVersion: $(terraformVersion)
+
+          - task: TerraformTaskV4@4
+            displayName: 'terraform init'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: $(azureServiceConnection)
+              backendAzureRmResourceGroupName: $(backendResourceGroup)
+              backendAzureRmStorageAccountName: $(backendStorageAccount)
+              backendAzureRmContainerName: $(backendContainer)
+              backendAzureRmKey: $(backendKey)
+              commandOptions: '-reconfigure'
+
+          # Download the plan artifact saved in the Plan stage
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download plan artifact'
+            inputs:
+              artifact: 'tfplan'
+              path: '$(Pipeline.Workspace)/tfplan'
+
+          - task: TerraformTaskV4@4
+            displayName: 'terraform apply'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              environmentServiceNameAzureRM: $(azureServiceConnection)
+              # Apply the exact plan file — no re-evaluation, no prompt
+              commandOptions: '-auto-approve $(Pipeline.Workspace)/tfplan/tfplan'
