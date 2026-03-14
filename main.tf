@@ -12,7 +12,7 @@ variable "admin_password" {
 # VMs are deployed to Australia East and japan east via their own location values.
 # ─────────────────────────────────────────
 resource "azurerm_resource_group" "rg" {
-  name     = "inchararg"
+  name     = "shivalik-rg"
   location = "West Europe"
 }
 
