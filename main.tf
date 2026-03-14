@@ -20,7 +20,7 @@ resource "azurerm_resource_group" "rg" {
 # NSG 1 - with SSH rule (Australia East)
 # ─────────────────────────────────────────
 resource "azurerm_network_security_group" "nsg1" {
-  name                = "inch-nsg1"
+  name                = "shivalik-nsg1"
   location            = "australiaeast"
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -41,7 +41,7 @@ resource "azurerm_network_security_group" "nsg1" {
 # NSG 2 - with SSH rule (japan east)
 # ─────────────────────────────────────────
 resource "azurerm_network_security_group" "nsg2" {
-  name                = "inch-nsg2"
+  name                = "shivalik-nsg2"
   location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -62,7 +62,7 @@ resource "azurerm_network_security_group" "nsg2" {
 # VNET 1 - for VM1 (Australia East)
 # ─────────────────────────────────────────
 resource "azurerm_virtual_network" "vnet1" {
-  name                = "inch-vnet1"
+  name                = "shivalik-vnet1"
   location            = "australiaeast"
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.5.0.0/16"]
@@ -72,7 +72,7 @@ resource "azurerm_virtual_network" "vnet1" {
 # VNET 2 - for VM2 (Japan East)
 # ─────────────────────────────────────────
 resource "azurerm_virtual_network" "vnet2" {
-  name                = "inch-vnet2"
+  name                = "shivalik-vnet2"
   location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.15.0.0/16"]
@@ -82,7 +82,7 @@ resource "azurerm_virtual_network" "vnet2" {
 # SUBNET 1 - inside VNet1
 # ─────────────────────────────────────────
 resource "azurerm_subnet" "subnet1" {
-  name                 = "inch-subnet1"
+  name                 = "shivalik-subnet1"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet1.name
   address_prefixes     = ["10.5.1.0/24"]
@@ -92,7 +92,7 @@ resource "azurerm_subnet" "subnet1" {
 # SUBNET 2 - inside VNet2
 # ─────────────────────────────────────────
 resource "azurerm_subnet" "subnet2" {
-  name                 = "inch-subnet2"
+  name                 = "shivalik-subnet2"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet2.name
   address_prefixes     = ["10.15.1.0/24"]
@@ -102,7 +102,7 @@ resource "azurerm_subnet" "subnet2" {
 # PUBLIC IP - VM1 (Australia East)
 # ─────────────────────────────────────────
 resource "azurerm_public_ip" "pip1" {
-  name                = "inchpip1"
+  name                = "shivalikpip1"
   location            = "australiaeast"
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -113,7 +113,7 @@ resource "azurerm_public_ip" "pip1" {
 # PUBLIC IP - VM2 (Japan East)
 # ─────────────────────────────────────────
 resource "azurerm_public_ip" "pip2" {
-  name                = "inchpip2"
+  name                = "shivalikpip2"
   location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -124,7 +124,7 @@ resource "azurerm_public_ip" "pip2" {
 # NIC 1 - VM1 with public IP (Australia East)
 # ─────────────────────────────────────────
 resource "azurerm_network_interface" "nic1" {
-  name                = "inch-nic1"
+  name                = "shivalik-nic1"
   location            = "australiaeast"
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -140,7 +140,7 @@ resource "azurerm_network_interface" "nic1" {
 # NIC 2 - VM2 with public IP (japan east)
 # ─────────────────────────────────────────
 resource "azurerm_network_interface" "nic2" {
-  name                = "inch-nic2"
+  name                = "shivalik-nic2"
   location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -172,7 +172,7 @@ resource "azurerm_network_interface_security_group_association" "nic-nsg-2" {
 # VM 1 - Australia East | 4 vCPU (Standard_D4ads_v5)
 # ─────────────────────────────────────────
 resource "azurerm_linux_virtual_machine" "vm1" {
-  name                = "inch-vm1"
+  name                = "shivalik-vm1"
   resource_group_name = azurerm_resource_group.rg.name
   location            = "australiaeast"
   size                = "Standard_D4ads_v5"             # 4 vCPU, 16 GB RAM
@@ -202,7 +202,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
 # VM 2 - japan east | 4 vCPU (Standard_D4ads_v5)
 # ─────────────────────────────────────────
 resource "azurerm_linux_virtual_machine" "vm2" {
-  name                = "inch-vm2"
+  name                = "shivalik-vm2"
   resource_group_name = azurerm_resource_group.rg.name
   location            = "japaneast"
   size                = "Standard_D4s_v3"             # 4 vCPU, 16 GB RAM
