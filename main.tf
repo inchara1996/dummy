@@ -9,7 +9,7 @@ variable "admin_password" {
 # ─────────────────────────────────────────
 # RESOURCE GROUP
 # Note: Resource group is in West Europe (neutral hub).
-# VMs are deployed to Australia East and North Europe via their own location values.
+# VMs are deployed to Australia East and japan east via their own location values.
 # ─────────────────────────────────────────
 resource "azurerm_resource_group" "rg" {
   name     = "inchararg"
@@ -38,11 +38,11 @@ resource "azurerm_network_security_group" "nsg1" {
 }
 
 # ─────────────────────────────────────────
-# NSG 2 - with SSH rule (North Europe)
+# NSG 2 - with SSH rule (japan east)
 # ─────────────────────────────────────────
 resource "azurerm_network_security_group" "nsg2" {
   name                = "inch-nsg2"
-  location            = "northeurope"
+  location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
 
   security_rule {
@@ -69,11 +69,11 @@ resource "azurerm_virtual_network" "vnet1" {
 }
 
 # ─────────────────────────────────────────
-# VNET 2 - for VM2 (North Europe)
+# VNET 2 - for VM2 (Japan East)
 # ─────────────────────────────────────────
 resource "azurerm_virtual_network" "vnet2" {
   name                = "inch-vnet2"
-  location            = "northeurope"
+  location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.15.0.0/16"]
 }
@@ -110,11 +110,11 @@ resource "azurerm_public_ip" "pip1" {
 }
 
 # ─────────────────────────────────────────
-# PUBLIC IP - VM2 (North Europe)
+# PUBLIC IP - VM2 (Japan East)
 # ─────────────────────────────────────────
 resource "azurerm_public_ip" "pip2" {
   name                = "inchpip2"
-  location            = "northeurope"
+  location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
@@ -137,11 +137,11 @@ resource "azurerm_network_interface" "nic1" {
 }
 
 # ─────────────────────────────────────────
-# NIC 2 - VM2 with public IP (North Europe)
+# NIC 2 - VM2 with public IP (japan east)
 # ─────────────────────────────────────────
 resource "azurerm_network_interface" "nic2" {
   name                = "inch-nic2"
-  location            = "northeurope"
+  location            = "japaneast"
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
@@ -199,12 +199,12 @@ resource "azurerm_linux_virtual_machine" "vm1" {
 }
 
 # ─────────────────────────────────────────
-# VM 2 - North Europe | 4 vCPU (Standard_D4ads_v5)
+# VM 2 - japan east | 4 vCPU (Standard_D4ads_v5)
 # ─────────────────────────────────────────
 resource "azurerm_linux_virtual_machine" "vm2" {
   name                = "inch-vm2"
   resource_group_name = azurerm_resource_group.rg.name
-  location            = "northeurope"
+  location            = "japaneast"
   size                = "Standard_D4ads_v5"             # 4 vCPU, 16 GB RAM
 
   admin_username                  = "azureuser"
